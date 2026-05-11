@@ -9,7 +9,7 @@ class carlisting(Base):
     id = Column (Integer, primary_key=True, index=True)
     model = Column(String)         # Ex: Mazda RX-7 FD3S
     auction_grade = Column(String) # Ex: 4, 3.5, R
-    mileage = Column(Integer)     # Quilometragem
-    prince_jpy = Column(Float)     # Preço em Ienes
+    mileage = Column(Integer)      # Quilometragem
+    price_jpy = Column(Float)      # Preço em Ienes
     transmission = Column(String)  # Manual ou Automatic
     url = Column(String)           # Link do anúncio
