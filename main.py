@@ -2,9 +2,11 @@ from fastapi import FastAPI
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import models
+import schemas
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
+from typing import List
 
 
 # Configuração do Banco de Dados (SQLite para começar fácil)
@@ -38,17 +40,32 @@ def check_cars():
     # Por enquanto retorna uma lista vazia, mas confirma que a rota funciona
     return {"listings": []}
 
-@app.post("/cars/")
-def create_car(model: str, grade: str, price: float, db: Session = Depends(get_db)):
-    new_car = models.carlisting(model=model, auction_grade=grade, price_jpy=price)
+@app.post("/cars/", response_model=schemas.Car)
+def create_car(car: schemas.CarCreate, db: Session = Depends(get_db)):
+
+    exchange_rate = 0.034
+    converted_price = car.price_jpy * exchange_rate
+
+    new_car = models.carlisting(
+        model=car.model,
+        auction_grade=car.auction_grade,
+        mileage=car.mileage,
+        price_jpy=car.price_jpy,
+        price_brl=converted_price,
+        transmission=car.transmission,
+        url=car.url
+    )
+
     db.add(new_car)
     db.commit()
     db.refresh(new_car)
     return new_car
 
-@app.get("/cars/")
+@app.get("/cars/", response_model=List[schemas.Car])
 def read_cars(db: Session = Depends(get_db)):
-    return db.query(models.carlisting).all()
+    cars = db.query(models.carlisting).all()
+    return cars
+
 
 
 

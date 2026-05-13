@@ -11,5 +11,6 @@ class carlisting(Base):
     auction_grade = Column(String) # Ex: 4, 3.5, R
     mileage = Column(Integer)      # Quilometragem
     price_jpy = Column(Float)      # Preço em Ienes
+    price_brl = Column(Float)      # Preço em Reais
     transmission = Column(String)  # Manual ou Automatic
     url = Column(String)           # Link do anúncio
