@@ -12,5 +12,6 @@ class carlisting(Base):
     mileage = Column(Integer)      # Quilometragem
     price_jpy = Column(Float)      # Preço em Ienes
     price_brl = Column(Float)      # Preço em Reais
+    price_usd = Column(Float)      # Preço em Dólares
     transmission = Column(String)  # Manual ou Automatic
     url = Column(String)           # Link do anúncio

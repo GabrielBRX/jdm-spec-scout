@@ -12,6 +12,7 @@ class CarCreate(BaseModel):
 class Car(CarCreate):
     id: int
     price_brl: float
+    price_usd: float
 
     class Config:
         from_attributes = True

@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import models
 import schemas
+import httpx
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -41,17 +42,28 @@ def check_cars():
     return {"listings": []}
 
 @app.post("/cars/", response_model=schemas.Car)
-def create_car(car: schemas.CarCreate, db: Session = Depends(get_db)):
+async def create_car(car: schemas.CarCreate, db: Session = Depends(get_db)):
 
-    exchange_rate = 0.034
-    converted_price = car.price_jpy * exchange_rate
+    url_api = "https://economia.awesomeapi.com.br/json/last/JPY-BRL,JPY-USD"
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url_api)
+        dados_moeda = response.json()
+
+    taxa_brl = float(dados_moeda["JPYBRL"]["bid"])
+    taxa_usd = float(dados_moeda["JPYUSD"]["bid"])
+
+    convertido_brl = car.price_jpy * taxa_brl
+    convertido_usd = car.price_jpy * taxa_usd
+
 
     new_car = models.carlisting(
         model=car.model,
         auction_grade=car.auction_grade,
         mileage=car.mileage,
         price_jpy=car.price_jpy,
-        price_brl=converted_price,
+        price_brl=convertido_brl,
+        price_usd=convertido_usd,
         transmission=car.transmission,
         url=car.url
     )
