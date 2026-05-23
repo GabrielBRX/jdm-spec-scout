@@ -7,7 +7,7 @@ import httpx
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 
 # Configuração do Banco de Dados (SQLite para começar fácil)
@@ -46,12 +46,19 @@ async def create_car(car: schemas.CarCreate, db: Session = Depends(get_db)):
 
     url_api = "https://economia.awesomeapi.com.br/json/last/JPY-BRL,JPY-USD"
 
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url_api)
-        dados_moeda = response.json()
+    try:
 
-    taxa_brl = float(dados_moeda["JPYBRL"]["bid"])
-    taxa_usd = float(dados_moeda["JPYUSD"]["bid"])
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(url_api)
+            response.raise_for_status()
+            dados_moeda = response.json()
+
+        taxa_brl = float(dados_moeda["JPYBRL"]["bid"])
+        taxa_usd = float(dados_moeda["JPYUSD"]["bid"])
+    
+    except (httpx.HTTPError, KeyError, IndexError):
+        taxa_brl = 0.035
+        taxa_usd = 0.0063
 
     convertido_brl = car.price_jpy * taxa_brl
     convertido_usd = car.price_jpy * taxa_usd
@@ -74,11 +81,21 @@ async def create_car(car: schemas.CarCreate, db: Session = Depends(get_db)):
     return new_car
 
 @app.get("/cars/", response_model=List[schemas.Car])
-def read_cars(db: Session = Depends(get_db)):
-    cars = db.query(models.carlisting).all()
+def read_cars(
+    max_mileage: Optional[int] = None,
+    transmission: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.carlisting)
+
+    if max_mileage is not None:
+        query = query.filter(models.carlisting.mileage <= max_mileage)
+
+    if transmission is not None:
+        query = query.filter(models.carlisting.transmission.ilike(f"%{transmission}%"))
+
+    cars = query.all()
     return cars
-
-
 
 
 
