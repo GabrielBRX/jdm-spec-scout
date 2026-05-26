@@ -15,3 +15,4 @@ class carlisting(Base):
     price_usd = Column(Float)      # Preço em Dólares
     transmission = Column(String)  # Manual ou Automatic
     url = Column(String)           # Link do anúncio
+

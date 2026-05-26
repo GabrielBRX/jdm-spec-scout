@@ -9,6 +9,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
+from fastapi import HTTPException
 
 # Configuração do Banco de Dados (SQLite para começar fácil)
 DATABASE_URL = "sqlite:///./cars.db"
@@ -26,6 +27,13 @@ def get_db():
         yield db
     finally:
         db.close()
+
+@app.get("/cars/check-url/", response_model=schemas.Car)
+def get_car_by_url(url: str, db: Session = Depends(get_db)):
+    car = db.query(models.carlisting).filter(models.carlisting.url == url).first()
+    if not car:
+        raise HTTPException(status_code=404, detail="Carro não encontrado com esta URL")
+    return car
 
 @app.get("/")
 def home():
@@ -97,6 +105,40 @@ def read_cars(
     cars = query.all()
     return cars
 
+@app.put("/cars/{car_id}", response_model=schemas.Car)
+async def update_car(car_id: int, car_update: schemas.CarCreate, db: Session = Depends(get_db)):
+    db_car = db.query(models.carlisting).filter(models.carlisting.id == car_id).first()
+    if not db_car:
+        raise HTTPException(status_code=404, detail="Carro não encontrado")
+    
+    url_api = "https://economia.awesomeapi.com.br/json/last/JPY-BRL,JPY-USD"
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(url_api)
+            response.raise_for_status()
+            dados_moeda = response.json()
 
+        taxa_brl = float(dados_moeda["JPYBRL"]["bid"])
+        taxa_usd = float(dados_moeda["JPYUSD"]["bid"])
+    except (httpx.HTTPError, KeyError, IndexError):
+        taxa_brl = 0.035
+        taxa_usd = 0.0063
+
+    convertido_brl = car_update.price_jpy * taxa_brl
+    convertido_usd = car_update.price_jpy * taxa_usd
+
+    db_car.model = car_update.model
+    db_car.auction_grade = car_update.auction_grade
+    db_car.mileage = car_update.mileage
+    db_car.price_jpy = car_update.price_jpy
+    db_car.price_brl = convertido_brl
+    db_car.price_usd = convertido_usd
+    db_car.transmission = car_update.transmission
+    db_car.url = car_update.url
+
+    db.commit()
+    db.refresh(db_car)
+    return db_car
+   
 
 
