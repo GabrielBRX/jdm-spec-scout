@@ -1,4 +1,6 @@
 import requests
+from bs4 import BeautifulSoup
+
 
 # URL base da sua API
 API_URL = "http://127.0.0.1:8000/cars"
@@ -6,15 +8,42 @@ API_URL = "http://127.0.0.1:8000/cars"
 def simular_garimpo_leilao():
     print("🤖 [Robô]: Iniciando varredura nos sites de leilão do Japão...")
 
+    html_falso = """
+    <html>
+        <body>
+            <div class="car-card">
+                <h2 class="car-title">RX-7 Spirit R</h2>
+                <span class="grade">Grade 4.5</span>
+                <p class="km">42000 km</p>
+                <div class="price">8500000</div>
+                <span class="gearbox">Manual</span>
+                <a class="link" href="https://leilaojapao.com/rx7-spirit-r-42k">Ver Anúncio</a>
+            </div>
+        </body>
+    </html>
+    """
+
+    soup = BeautifulSoup(html_falso, "html.parser")
+    card = soup.find("div", class_="car-card")
+
+    modelo = card.find("h2", class_="car-title")
+    nota = card.find("div", class_="grade")
+    quilometragem = int(card.find("p", class_="km").text.replace(" km", "").strip())
+    preco = int(card.find("div", class_="price").text)
+    cambio = card.find("span", class_="gearbox").text
+    link = card.find("a", class_="link")["href"]
+
+
+
     # Dois carros simulados
     carros_raspados = [
         {
-            "model": "RX-7 Spirit R",
-            "auction_grade": "Grade 4.5",
-            "mileage": 42000,
-            "price_jpy": 8500000,
-            "transmission": "Manual",
-            "url": "https://leilaojapao.com/rx7-spirit-r-42k"
+            "model": modelo,
+            "auction_grade": nota,
+            "mileage": quilometragem,
+            "price_jpy": preco,
+            "transmission": cambio,
+            "url": link
         },
         {
             "model": "RX-7 Standard",
