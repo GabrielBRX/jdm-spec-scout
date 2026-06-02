@@ -8,43 +8,41 @@ API_URL = "http://127.0.0.1:8000/cars"
 def simular_garimpo_leilao():
     print("🤖 [Robô]: Iniciando varredura nos sites de leilão do Japão...")
 
-    html_falso = """
-    <html>
-        <body>
-            <div class="car-card">
-                <h2 class="car-title">RX-7 Spirit R</h2>
-                <span class="grade">Grade 4.5</span>
-                <p class="km">42000 km</p>
-                <div class="price">8500000</div>
-                <span class="gearbox">Manual</span>
-                <a class="link" href="https://leilaojapao.com/rx7-spirit-r-42k">Ver Anúncio</a>
-            </div>
-        </body>
-    </html>
-    """
+    #URL_ALVO = "https://www.beforward.jp/stocklist/make=mazda/sortkey=a/"
+    #URL_ALVO = "https://www.beforward.jp/stocklist/make=mazda/sortkey=a/"
+    URL_ALVO = "https://scrapepark.org/courses/spanish/"
 
-    soup = BeautifulSoup(html_falso, "html.parser")
-    card = soup.find("div", class_="car-card")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1"
+    }
+    try:
+        print(f"🌐 [Robô]: Conectando ao site: {URL_ALVO}")
+        resposta = requests.get(URL_ALVO, headers=headers)
 
-    modelo = card.find("h2", class_="car-title")
-    nota = card.find("div", class_="grade")
-    quilometragem = int(card.find("p", class_="km").text.replace(" km", "").strip())
-    preco = int(card.find("div", class_="price").text)
-    cambio = card.find("span", class_="gearbox").text
-    link = card.find("a", class_="link")["href"]
+        if resposta.status_code == 200:
+            print("✅ [Robô]: Conexão bem-sucedida! HTML capturado.")
+            html_real = resposta.text
+
+            soup = BeautifulSoup(html_real, "html.parser")
+
+            print(f"📄 [Robô]: Tamanho do HTML recebido: {len(html_real)} caracteres.")
+        
+        else:
+            print(f"❌ [Robô]: Erro ao acessar o site. Status: {resposta.status_code}")
+            return
 
 
+    except Exception as e:
+        print(f"💥 [Robô]: Falha catastrófica de conexão: {e}")
+        return
 
-    # Dois carros simulados
+   
     carros_raspados = [
-        {
-            "model": modelo,
-            "auction_grade": nota,
-            "mileage": quilometragem,
-            "price_jpy": preco,
-            "transmission": cambio,
-            "url": link
-        },
         {
             "model": "RX-7 Standard",
             "auction_grade": "Grade 4",
