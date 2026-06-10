@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import models
@@ -140,5 +140,14 @@ async def update_car(car_id: int, car_update: schemas.CarCreate, db: Session = D
     db.refresh(db_car)
     return db_car
    
+@app.delete("/cars/{car_id}")
+def delete_car(car_id: int, db: Session = Depends(get_db)):
+    db_car = db.query(models. carlisting).filter(models.carlisting.id == car_id).first()
 
+    if not db_car:
+        raise HTTPException(status_code=404, detail="Carro não encontrado no banco de dados")
+    
+    db.delete(db_car)
+    db.commit()
+    return {"message": f"Sucesso! O veículo ID {car_id} ({db_car.model}) foi removido."}
 
