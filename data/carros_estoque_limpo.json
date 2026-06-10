@@ -1,0 +1,172 @@
+[
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "2002/1",
+        "preco": "USD 31,910",
+        "quilometragem": "109,700km",
+        "cambio": "Manual (MT)",
+        "cor": "White",
+        "localizacao": "Aichi, JAPAN",
+        "stock_id": "DGL4695"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "2000/2",
+        "preco": "USD 39,270",
+        "quilometragem": "96,000km",
+        "cambio": "Manual (MT)",
+        "cor": "Red",
+        "localizacao": "Saitama, JAPAN",
+        "stock_id": "DPM6859"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "2000/8",
+        "preco": "USD 31,620",
+        "quilometragem": "93,000km",
+        "cambio": "Manual (MT)",
+        "cor": "Blue",
+        "localizacao": "Saitama, JAPAN",
+        "stock_id": "DAE3894"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "2002/8",
+        "preco": "USD 40,100",
+        "quilometragem": "75,000km",
+        "cambio": "Manual (MT)",
+        "cor": "White",
+        "localizacao": "Saitama, JAPAN",
+        "stock_id": "DDN5762"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "1993/12",
+        "preco": "USD 26,770",
+        "quilometragem": "0km",
+        "cambio": "Manual (MT)",
+        "cor": "Blue",
+        "localizacao": "Osaka, JAPAN",
+        "stock_id": "DBC9596"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "1983/5",
+        "preco": "USD 18,940",
+        "quilometragem": "95,000km",
+        "cambio": "Manual (MT)",
+        "cor": "Black",
+        "localizacao": "Osaka, JAPAN",
+        "stock_id": "DGR7996"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "1999/7",
+        "preco": "USD 37,770",
+        "quilometragem": "112,000km",
+        "cambio": "Manual (MT)",
+        "cor": "Red",
+        "localizacao": "Saitama, JAPAN",
+        "stock_id": "DXV2776"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "2002/12",
+        "preco": "USD 50,020",
+        "quilometragem": "42,691km",
+        "cambio": "Manual (MT)",
+        "cor": "Silver",
+        "localizacao": "Aichi, JAPAN",
+        "stock_id": "DTY4259"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "2000/3",
+        "preco": "USD 28,750",
+        "quilometragem": "84,140km",
+        "cambio": "Manual (MT)",
+        "cor": "Blue",
+        "localizacao": "Osaka, JAPAN",
+        "stock_id": "DAX5645"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "2000/11",
+        "preco": "USD 28,070",
+        "quilometragem": "323,333km",
+        "cambio": "Manual (MT)",
+        "cor": "White",
+        "localizacao": "Osaka, JAPAN",
+        "stock_id": "DAG2423"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "N/A",
+        "preco": "USD 99,600",
+        "quilometragem": "178,157km",
+        "cambio": "Manual (MT)",
+        "cor": "N/A",
+        "localizacao": "Ibaraki, JAPAN",
+        "stock_id": "DAF6667"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "1999/3",
+        "preco": "USD 27,520",
+        "quilometragem": "50,261km",
+        "cambio": "Manual (MT)",
+        "cor": "Black",
+        "localizacao": "Osaka, JAPAN",
+        "stock_id": "DAR9235"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "2002/3",
+        "preco": "USD 39,140",
+        "quilometragem": "87,000km",
+        "cambio": "Manual (MT)",
+        "cor": "White",
+        "localizacao": "Saitama, JAPAN",
+        "stock_id": "DNZ3472"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "1997/5",
+        "preco": "USD 24,680",
+        "quilometragem": "127,983km",
+        "cambio": "Manual (MT)",
+        "cor": "Red",
+        "localizacao": "Nagasaki, JAPAN",
+        "stock_id": "DBU9665"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "1997/3",
+        "preco": "USD 42,490",
+        "quilometragem": "48,000km",
+        "cambio": "Manual (MT)",
+        "cor": "White",
+        "localizacao": "Osaka, JAPAN",
+        "stock_id": "DAZ7279"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "2002/3",
+        "preco": "USD 34,040",
+        "quilometragem": "70,680km",
+        "cambio": "Manual (MT)",
+        "cor": "N/A",
+        "localizacao": "Nagano, JAPAN",
+        "stock_id": "DBH4552"
+    },
+    {
+        "carro": "Mazda RX-7",
+        "ano_mes": "1999/8",
+        "preco": "USD 59,800",
+        "quilometragem": "28,600km",
+        "cambio": "N/A",
+        "cor": "Blue",
+        "localizacao": "Gunma, JAPAN",
+        "stock_id": "DAF8649"
+    }
+]
