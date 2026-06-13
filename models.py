@@ -3,16 +3,16 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
-class carlisting(Base):
+class CarListing(Base):
     __tablename__ = "car_listings"
 
-    id = Column (Integer, primary_key=True, index=True)
-    model = Column(String)         # Ex: Mazda RX-7 FD3S
-    auction_grade = Column(String) # Ex: 4, 3.5, R
-    mileage = Column(Integer)      # Quilometragem
-    price_jpy = Column(Float)      # Preço em Ienes
-    price_brl = Column(Float)      # Preço em Reais
-    price_usd = Column(Float)      # Preço em Dólares
-    transmission = Column(String)  # Manual ou Automatic
-    url = Column(String)           # Link do anúncio
-
+    id = Column(Integer, primary_key=True, index=True)
+    stock_id = Column(String, unique=True, index=True) # ID único do estoque (Evita duplicados!)
+    carro = Column(String)                             # Ex: Mazda RX-7
+    ano_mes = Column(String)                           # Ex: 2002/1
+    preco = Column(String)                             # Guardado como String "USD 31,910" para facilitar
+    quilometragem = Column(String)                     # Guardado como "109,700km"
+    cambio = Column(String)                            # Manual (MT) ou Automático (AT)
+    cor = Column(String)                               # Ex: White, Red, Blue
+    localizacao = Column(String)                       # Ex: Aichi, JAPAN
+    fonte = Column(String, default="SBT Japan")

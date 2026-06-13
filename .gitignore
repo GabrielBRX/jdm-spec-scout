@@ -3,3 +3,28 @@ __pycache__/
 venv/
 cars.db
 .env
+
+JDM-SPEC-SCOUT/
+│
+├── scrapers/               <-- Tudo que for automação e limpeza fica aqui
+│   ├── __init__.py
+│   ├── carused_scraper.py
+│   ├── sbtjapan_scraper.py
+│   ├── scrapear_sbt_hardcore.py  <-- Movido para cá
+│   └── limpar_dados.py           <-- Movido para cá
+│
+├── data/                   <-- Pasta nova para seus arquivos de dados e dumps
+│   ├── carros_estoque_limpo.json <-- O FastAPI vai ler daqui
+│   └── (arquivos .html e .json brutos que geramos nos testes podem ir aqui)
+│
+├── venv/                   <-- Seu ambiente virtual (intocado)
+├── cars.db                 <-- Seu banco SQLite
+├── database.py             <-- Configuração do SQLAlchemy/Banco
+├── models.py               <-- Seus modelos do banco
+├── schemas.py              <-- Seus esquemas de validação Pydantic
+├── main.py                 <-- Seu ponto de entrada do FastAPI
+├── baixar_pagina.py        <-- Script auxiliar (se ainda usar, pode ficar na raiz ou em utilitários)
+├── pegar_api.py            <-- Script auxiliar
+├── .gitignore
+├── .gitattributes
+└── readme.md
