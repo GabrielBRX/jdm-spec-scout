@@ -19,10 +19,6 @@ models.Base.metadata.create_all(bind=engine)
 # 2. Inicialização do FastAPI
 app = FastAPI(title="JDM Spec Scout")
 
-# Configuração do caminho do JSON na pasta data
-BASE_DIR = Path(__file__).resolve().parent
-JSON_DATA_PATH = BASE_DIR / "data" / "carros_estoque_limpo.json"
-
 # Dependência do Banco de Dados
 def get_db():
     db = SessionLocal()
@@ -40,24 +36,36 @@ def rota_inicial():
         "documentacao": "/docs"
     }
 
-# 3. Rota do SBT Japan
-@app.get("/api/cars/sbt", tags=["Scrapers"])
-def obter_carros_sbt():
+# 3. Rota de Carros (Consultando direto o SQLite com Filtros opcionais)
+@app.get("/api/cars", response_model=List[schemas.CarListingResponse], tags=["Estoque JDM"])
+def obter_carros(
+    cambio: Optional[str] = None, 
+    cor: Optional[str] = None, 
+    db: Session = Depends(get_db)
+):
     """
-    Retorna a lista de carros importados e higienizados do SBT Japan.
+    Retorna a lista de todos os carros cadastrados no banco de dados.
+    Permite filtrar opcionalmente por câmbio (Ex: 'Manual') ou por cor (Ex: 'White').
     """
-    if not JSON_DATA_PATH.exists():
-        raise HTTPException(
-            status_code=404, 
-            detail="Arquivo de estoque limpo não encontrado. Certifique-se de rodar o script de limpeza primeiro."
-        )
-    
     try:
-        with open(JSON_DATA_PATH, "r", encoding="utf-8") as f:
-            dados_carros = json.load(f)
-        return dados_carros
+        # Inicia a query consultando a tabela CarListing
+        query = db.query(models.CarListing)
+        
+        # Se o usuário mandou o filtro de câmbio, aplica na query
+        if cambio:
+            query = query.filter(models.CarListing.cambio.ilike(f"%{cambio}%"))
+            
+        # Se o usuário mandou o filtro de cor, aplica na query
+        if cor:
+            query = query.filter(models.CarListing.cor.ilike(f"%{cor}%"))
+            
+        # Executa a query e traz os resultados
+        carros_do_banco = query.all()
+        
+        return carros_do_banco
+        
     except Exception as e:
         raise HTTPException(
             status_code=500, 
-            detail=f"Erro interno ao ler os dados do estoque: {str(e)}"
+            detail=f"Erro interno ao consultar o banco de dados: {str(e)}"
         )
