@@ -3,13 +3,14 @@ import re
 from playwright.async_api import async_playwright
 import sys
 import os
+from sqlalchemy.orm import Session
 
 # Garante que o Python ache o main e database na pasta pai
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from main import SessionLocal
+
 import models
 
-async def garimpar_carused_completo():
+async def garimpar_carused_completo(db: Session):
     print("🤖 [jdm-spec-scout]: Iniciando Varredura Avançada com Paginação na Carused...")
     
     FONTES_MARCAS = {
@@ -20,7 +21,7 @@ async def garimpar_carused_completo():
         "subaru": "https://carused.jp/pt/car-list/subaru"
     }
     
-    # Lista estrita de lendas JDM para evitar falsos positivos (como SUVs)
+    # Lista estrita de lendas JDM para evitar falsos positivos
     ALVOS_ESTRITOS = [
         "rx-7", "rx7", "rx-8", "rx8", "miata", "roadster",
         "supra", "ae86", "chaser", "mr2", "celica", "altezza", "gt86", "gt-86", "86", "zn6", "a90",
@@ -41,15 +42,11 @@ async def garimpar_carused_completo():
             viewport={"width": 1920, "height": 1080}
         )
         page = await context.new_page()
-        
-        db = SessionLocal()
         total_novos_carros = 0
         
         try:
             for marca, url_base in FONTES_MARCAS.items():
-                # Loop de paginação
                 for pag in range(1, PAGINAS_POR_MARCA + 1):
-                    # Formata a URL dependendo da página
                     url_alvo = f"{url_base}?page={pag}" if pag > 1 else url_base
                     print(f"\n🌐 [Robô]: Varrendo {marca.upper()} -> Página {pag}/{PAGINAS_POR_MARCA}...")
                     
@@ -70,10 +67,7 @@ async def garimpar_carused_completo():
                             
                             if "preço: us$" in linha.lower() and marca in linha.lower():
                                 if re.match(r"^\d{4}", linha):
-                                    
-                                    # 🔒 Validação Estrita: Testa se a palavra-chave está isolada na string
                                     for alvo in ALVOS_ESTRITOS:
-                                        # Cria uma regra de borda de palavra (\b) para não pegar letras soltas no meio de outras palavras
                                         padrao = r"\b" + re.escape(alvo) + r"\b"
                                         if re.search(padrao, linha.lower()):
                                             if linha not in dados_pagina:
@@ -82,7 +76,6 @@ async def garimpar_carused_completo():
                         
                         print(f"   📊 Encontrados {len(dados_pagina)} candidatos válidos nesta página.")
                         
-                        # Salvando os registros encontrados
                         for carro in dados_pagina:
                             try:
                                 ano = re.search(r"^\d{4}", carro).group() if re.search(r"^\d{4}", carro) else "N/A"
@@ -99,14 +92,15 @@ async def garimpar_carused_completo():
                                 
                                 url_carro = f"https://carused.jp/pt/car/{nome_modelo.lower().replace(' ', '-')}"
                                 
-                                existe = db.query(models.carlisting).filter(models.carlisting.url == url_carro).first()
+                                # 🛠️ CORREÇÃO: Usando a classe correta CarListing maiúscula
+                                existe = db.query(models.CarListing).filter(models.CarListing.url == url_carro).first()
                                 if not existe:
-                                    novo_registro = models.carlisting(
+                                    novo_registro = models.CarListing(
                                         model=f"{nome_modelo} ({ano})",
                                         auction_grade="Stock",
                                         mileage=km,
                                         price_jpy=preco_jpy,
-                                        price_brl=preco_usd * 5.20, # Atualizado taxa média
+                                        price_brl=preco_usd * 5.20,
                                         price_usd=preco_usd,
                                         transmission=transmissao,
                                         url=url_carro
@@ -125,11 +119,16 @@ async def garimpar_carused_completo():
                 db.commit()
                 print(f"\n✨ [Sucesso]: Varredura de páginas concluída! {total_novos_carros} novos registros adicionados.")
             else:
-                print("\n💤 nenhun JDM inédito nas páginas varridas.")
+                print("\n💤 Nenhum JDM inédito nas páginas varridas.")
                 
         finally:
-            db.close()
             await browser.close()
 
+# Para rodar o arquivo isolado pelo terminal se quiser testar sem o FastAPI
 if __name__ == "__main__":
-    asyncio.run(garimpar_carused_completo())
+    from database import SessionLocal  # Import local apenas para teste isolado
+    database_session = SessionLocal()
+    try:
+        asyncio.run(garimpar_carused_completo(database_session))
+    finally:
+        database_session.close()
