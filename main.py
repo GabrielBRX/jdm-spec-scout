@@ -1,13 +1,15 @@
-import json
-from pathlib import Path
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+import sys
+import asyncio
 
+# 🛠️ CORREÇÃO PARA O PLAYWRIGHT RODAR NO WINDOWS COM UVICORN:
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from scrapers.carused_scraper import garimpar_carused_completo
-
 import models
 import schemas
 
@@ -39,7 +41,6 @@ def rota_inicial():
         "documentacao": "/docs"
     }
 
-# 3. Rota de Carros (Consultando direto o SQLite com Filtros opcionais)
 # 3. Rota de Carros (Consultando direto o SQLite com Filtros Dinâmicos)
 @app.get("/api/cars", response_model=List[schemas.CarListingResponse], tags=["Estoque JDM"])
 def obter_carros(
@@ -92,16 +93,28 @@ def obter_carros(
 
 # 4. Rota para Disparar a Raspagem e Alimentar o Banco de Dados
 @app.post("/api/scrape", tags=["Automação & Carga"])
-async def disparar_e_salvar_raspagem(db: Session = Depends(get_db)):
+def disparar_e_salvar_raspagem(db: Session = Depends(get_db)):
     """
     Dispara o robô assíncrono Playwright para varrer o carused.jp
     e atualizar o banco de dados SQLite em tempo real.
+    Garante o ProactorEventLoop correto no Windows para evitar o NotImplementedError.
     """
     try:
-        print("🔌 Rota /api/scrape acionada! Chamando o robô Playwright...")
+        print("🔌 Rota /api/scrape acionada! Configurando ambiente seguro para o Playwright...")
         
-        # O robô entra nas páginas, garimpa e já faz o db.add() e db.commit() lá dentro!
-        await garimpar_carused_completo(db)
+        # Criamos explicitamente um novo loop de eventos limpo
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        # No Windows, forçamos o ProactorEventLoop diretamente neste laço isolado
+        if sys.platform == 'win32':
+            loop = asyncio.ProactorEventLoop()
+            asyncio.set_event_loop(loop)
+            
+        print("🤖 Chamando o robô Playwright...")
+        # Executa a função assíncrona dentro do laço configurado de forma síncrona para a rota
+        loop.run_until_complete(garimpar_carused_completo(db))
+        loop.close()
         
         return {
             "status": "Sucesso", 
