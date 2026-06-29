@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import models
 
 async def garimpar_carused_completo(db: Session):
-    print("🤖 [jdm-spec-scout]: Iniciando Varredura Avançada com Paginação na Carused...")
+    print("🤖 [jdm-spec-scout]: Iniciando Varredura Avançada com Sincronização na Carused...")
     
     FONTES_MARCAS = {
         "mazda": "https://carused.jp/pt/car-list/mazda",
@@ -21,7 +21,7 @@ async def garimpar_carused_completo(db: Session):
         "subaru": "https://carused.jp/pt/car-list/subaru"
     }
     
-    # Lista estrita de lendas JDM para evitar falsos positivos
+    # Lista estrita de lendas JDM
     ALVOS_ESTRITOS = [
         "rx-7", "rx7", "rx-8", "rx8", "miata", "roadster",
         "supra", "ae86", "chaser", "mr2", "celica", "altezza", "gt86", "gt-86", "86", "zn6", "a90",
@@ -31,6 +31,9 @@ async def garimpar_carused_completo(db: Session):
     ]
     
     PAGINAS_POR_MARCA = 3  # Quantas páginas você quer varrer por marca?
+    
+    # 🛒 Lista para monitorar TODOS os Stock IDs reais ativos hoje nesta varredura
+    ids_ativos_hoje = []
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -53,82 +56,115 @@ async def garimpar_carused_completo(db: Session):
                     try:
                         await page.goto(url_alvo, wait_until="networkidle", timeout=30000)
                         
-                        # Rolagem para Lazy Load
+                        # Rolagem inteligente para carregar conteúdo (Lazy Load)
                         await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2);")
                         await asyncio.sleep(1)
                         await page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
                         await asyncio.sleep(1)
                         
-                        elementos = await page.locator("a, div").all_inner_texts()
+                        # 🎯 CAPTURA DINÂMICA via links <a>
+                        links = await page.locator("a").all()
                         dados_pagina = []
                         
-                        for texto in elementos:
-                            linha = texto.strip().replace("\n", " ")
+                        for link in links:
+                            texto_link = await link.inner_text()
+                            if not texto_link:
+                                continue
+                                
+                            linha = texto_link.strip().replace("\n", " ")
+                            linha_lower = linha.lower()
                             
-                            if "preço: us$" in linha.lower() and marca in linha.lower():
-                                if re.match(r"^\d{4}", linha):
-                                    for alvo in ALVOS_ESTRITOS:
-                                        padrao = r"\b" + re.escape(alvo) + r"\b"
-                                        if re.search(padrao, linha.lower()):
-                                            if linha not in dados_pagina:
-                                                dados_pagina.append(linha)
-                                            break
+                            if ("us$" in linha_lower or "preço" in linha_lower or "price" in linha_lower) and marca in linha_lower:
+                                for alvo in ALVOS_ESTRITOS:
+                                    padrao = r"\b" + re.escape(alvo) + r"\b"
+                                    if re.search(padrao, linha_lower):
+                                        
+                                        # Captura a URL real apenas para usar se necessário (não salvamos no banco)
+                                        url_real = await link.get_attribute("href") or ""
+                                        
+                                        item_com_dados = (linha, url_real)
+                                        if item_com_dados not in dados_pagina:
+                                            dados_pagina.append(item_com_dados)
+                                        break
                         
                         print(f"   📊 Encontrados {len(dados_pagina)} candidatos válidos nesta página.")
                         
-                        for carro in dados_pagina:
+                        for carro, url_carro in dados_pagina:
                             try:
-                                ano = re.search(r"^\d{4}", carro).group() if re.search(r"^\d{4}", carro) else "N/A"
-                                preco_usd_str = re.search(r"Preço:\s*US\$\s*([\d.]+)", carro).group(1).replace(".", "")
+                                ano_match = re.search(r"\b(19\d{2}|20\d{2})\b", carro)
+                                ano = ano_match.group(1) if ano_match else "N/A"
+                                
+                                preco_usd_str = re.search(r"(?:preço|price)?\s*:?\s*us\$\s*([\d.]+)", carro, re.IGNORECASE).group(1).replace(".", "")
                                 preco_usd = float(preco_usd_str)
+                                
                                 km_str = re.search(r"([\d.,]+)\s*km", carro, re.IGNORECASE).group(1).replace(",", "").replace(".", "")
                                 km = int(km_str)
                                 
                                 transmissao = "Manual" if " mt " in carro.lower() or "manual" in carro.lower() else "Automatic"
-                                preco_jpy = preco_usd * 150.0
                                 
+                                # 🔑 GERAÇÃO DO STOCK ID: Como a Carused esconde o ID na listagem, vamos gerar um ID 
+                                # baseado no modelo, ano e km para criar uma assinatura única e evitar duplicados.
                                 fim_titulo = carro.lower().find("km")
                                 nome_modelo = carro[:fim_titulo-4].strip() if fim_titulo != -1 else f"{marca.capitalize()} JDM"
+                                nome_modelo = re.sub(r"^\d{4}\s*", "", nome_modelo)
                                 
-                                url_carro = f"https://carused.jp/pt/car/{nome_modelo.lower().replace(' ', '-')}"
+                                stock_id_real = f"CU-{marca[:2].upper()}-{ano}-{km}"
                                 
-                                # 🛠️ CORREÇÃO: Usando a classe correta CarListing maiúscula
-                                existe = db.query(models.CarListing).filter(models.CarListing.url == url_carro).first()
+                                cor_detectada = "N/A"
+                                cores_comuns = ["white", "black", "silver", "blue", "red", "grey", "gray", "yellow"]
+                                for c in cores_comuns:
+                                    if c in carro.lower():
+                                        cor_detectada = c.capitalize()
+                                        break
+                                
+                                # Adiciona à lista de IDs ativos capturados hoje
+                                ids_ativos_hoje.append(stock_id_real)
+                                
+                                # 🔍 CHECAGEM DE DUPLICADOS: Feita pelo stock_id como manda seu models.py
+                                existe = db.query(models.CarListing).filter(models.CarListing.stock_id == stock_id_real).first()
                                 if not existe:
                                     novo_registro = models.CarListing(
-                                        model=f"{nome_modelo} ({ano})",
-                                        auction_grade="Stock",
-                                        mileage=km,
-                                        price_jpy=preco_jpy,
-                                        price_brl=preco_usd * 5.20,
-                                        price_usd=preco_usd,
-                                        transmission=transmissao,
-                                        url=url_carro
+                                        stock_id=stock_id_real,
+                                        carro=nome_modelo,
+                                        ano_mes=f"{ano}/1",
+                                        preco=f"USD {preco_usd:,.0f}",
+                                        quilometragem=f"{km:,}km",
+                                        cambio=f"{transmissao} (MT)" if transmissao == "Manual" else "Automatic (AT)",
+                                        cor=cor_detectada,
+                                        localizacao="JAPAN",
+                                        fonte="Carused"  # Sobrescreve o default para marcar que veio da Carused!
                                     )
                                     db.add(novo_registro)
                                     total_novos_carros += 1
-                                    print(f"      ➕ [Adicionado]: {nome_modelo} ({ano})")
+                                    print(f"      ➕ [Adicionado]: {nome_modelo} ({ano}) - Stock ID: {stock_id_real}")
                             except Exception:
                                 continue
                                 
                     except Exception as page_err:
-                        print(f"   ❌ Erro ao processar a página {pag}: {page_err}")
+                        print(f"   ❌ Erro ao acessar a página {pag}: {page_err}")
                         continue
-                        
+            
+            # 🧹 --- ETAPA DE FAXINA AUTOMÁTICA VIA STOCK ID ---
+            print("\n🧹 [Faxina]: Iniciando verificação de anúncios vendidos...")
+            if ids_ativos_hoje:
+                anuncios_antigos = db.query(models.CarListing).filter(
+                    models.CarListing.fonte == "Carused",
+                    ~models.CarListing.stock_id.in_(ids_ativos_hoje)
+                )
+                total_deletado = anuncios_antigos.count()
+                
+                if total_deletado > 0:
+                    anuncios_antigos.delete(synchronize_session=False)
+                    print(f"    🗑️ [Limpeza]: {total_deletado} carros da Carused foram removidos pois saíram do site!")
+                else:
+                    print("    ✅ [Limpeza]: Nenhum carro vendido detectado. Banco 100% atualizado!")
+
+            db.commit()
+            
             if total_novos_carros > 0:
-                db.commit()
-                print(f"\n✨ [Sucesso]: Varredura de páginas concluída! {total_novos_carros} novos registros adicionados.")
+                print(f"\n✨ [Sucesso]: Sincronização concluída! {total_novos_carros} novos registros adicionados.")
             else:
-                print("\n💤 Nenhum JDM inédito nas páginas varridas.")
+                print("\n💤 Sincronização concluída. Nenhum JDM inédito encontrado.")
                 
         finally:
             await browser.close()
-
-# Para rodar o arquivo isolado pelo terminal se quiser testar sem o FastAPI
-if __name__ == "__main__":
-    from database import SessionLocal  # Import local apenas para teste isolado
-    database_session = SessionLocal()
-    try:
-        asyncio.run(garimpar_carused_completo(database_session))
-    finally:
-        database_session.close()

@@ -122,6 +122,11 @@ def disparar_e_salvar_raspagem(db: Session = Depends(get_db)):
         }
         
     except Exception as e:
+        # Importa o traceback para cuspir o erro detalhado no seu terminal
+        import traceback
+        print("❌ ERRO CRÍTICO NO ROBÔ:")
+        traceback.print_exc()
+        
         raise HTTPException(
             status_code=500, 
             detail=f"Erro na execução do robô: {str(e)}"
