@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -10,9 +10,10 @@ class CarListing(Base):
     stock_id = Column(String, unique=True, index=True) # ID único do estoque (Evita duplicados!)
     carro = Column(String)                             # Ex: Mazda RX-7
     ano_mes = Column(String)                           # Ex: 2002/1
-    preco = Column(String)                             # Guardado como String "USD 31,910" para facilitar
+    preco = Column(String)                             # Guardado como String "USD 31,910"
     quilometragem = Column(String)                     # Guardado como "109,700km"
     cambio = Column(String)                            # Manual (MT) ou Automático (AT)
     cor = Column(String)                               # Ex: White, Red, Blue
     localizacao = Column(String)                       # Ex: Aichi, JAPAN
     fonte = Column(String, default="SBT Japan")
+    link = Column(String)                              # ➕ Coluna adicionada com sucesso!
