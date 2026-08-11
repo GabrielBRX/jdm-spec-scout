@@ -1,13 +1,15 @@
+import sys
+import asyncio
+
+# 🛠️ FORÇAR O PROACTOR EVENT LOOP NO WINDOWS (DEVE SER A PRIMEIRA COISA)
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-import sys
-import asyncio
-
-# 🛠️ CORREÇÃO PARA O PLAYWRIGHT RODAR NO WINDOWS COM UVICORN:
-if sys.platform == 'win32':
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+from notifier import verificar_e_notificar
 
 from scrapers.carused_scraper import garimpar_carused_completo
 import models
@@ -78,24 +80,34 @@ def obter_carros(
         )
 
 
-# 4. Rota para Disparar a Raspagem (Otimizada e Assíncrona Nativa)
+import concurrent.futures
+
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+
 @app.post("/api/scrape", tags=["Automação & Carga"])
 async def disparar_e_salvar_raspagem(db: Session = Depends(get_db)):
     """
-    Dispara o robô assíncrono Playwright usando o loop nativo do FastAPI,
-    evitando conflitos de concorrência com o Uvicorn no Windows.
+    Dispara o robô isolando-o em uma thread separada, 
+    eliminando o conflito de loop do Windows com o Playwright.
     """
     try:
-        print("🔌 Rota /api/scrape acionada de forma assíncrona nativa!")
-        print("🤖 Chamando o robô Playwright focado por Keywords...")
+        print("🔌 Rota /api/scrape acionada!")
         
-        # Como a rota agora é 'async def', podemos simplesmente usar await direto na função assíncrona!
-        # Isso evita criar e fechar loops manualmente, o que quebrava o Uvicorn às vezes.
-        await garimpar_carused_completo(db)
+        loop = asyncio.get_running_loop()
+        
+        
+        await loop.run_in_executor(
+            executor, 
+            lambda: asyncio.run(garimpar_carused_completo(db))
+        )
+        
+        
+        print("📱 [JDM-SCOUT]: Disparando alertas para o Telegram...")
+        await verificar_e_notificar()
         
         return {
             "status": "Sucesso", 
-            "detalhes": "O robô Playwright varreu os alvos JDM com base nos filtros inteligentes por URL!"
+            "detalhes": "Robô executado com sucesso em thread isolada e alertas enviados!"
         }
         
     except Exception as e:
