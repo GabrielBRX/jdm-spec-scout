@@ -11,9 +11,7 @@ async def espionar_rede():
         )
         page = await context.new_page()
         
-        # Esse bloco vai printar no terminal absolutamente TUDO que o site chamar
         async def monitorar(response):
-            # Filtra apenas requisições do tipo fetch/xhr ou que pareçam trazer dados (ignora imagens/css)
             if response.request.resource_type in ["fetch", "xhr"]:
                 print(f"🔗 Chamada detectada: {response.url} | Status: {response.status}")
 
@@ -22,7 +20,6 @@ async def espionar_rede():
         url_busca = "https://www.sbtjapan.com/used-cars/?keyword=rx-7"
         await page.goto(url_busca, wait_until="domcontentloaded", timeout=60000)
         
-        # Deixei 20 segundos para a página carregar tudo com calma
         print("⏳ Monitorando a rede por 20 segundos... Olhe o seu terminal!")
         await asyncio.sleep(20)
         
