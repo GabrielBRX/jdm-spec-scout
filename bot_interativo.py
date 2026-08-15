@@ -1,16 +1,12 @@
 import sqlite3
+import os
+from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
-import os
-from dotenv import load_dotenv
-
+# Carrega as variáveis de ambiente do arquivo .env
 load_dotenv()
 token = os.getenv("TELEGRAM_TOKEN")
-
-app = ApplicationBuilder().token(token).build()
-
-
 
 MARCAS = ["Mazda", "Toyota", "Nissan", "Subaru", "Mitsubishi"]
 
@@ -59,7 +55,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         conn = sqlite3.connect('cars.db')
         cursor = conn.cursor()
         
-        # Puxa também a coluna 'foto' do banco
         cursor.execute("""
             SELECT carro, ano_mes, preco, quilometragem, cambio, link, foto 
             FROM car_listings 
@@ -106,7 +101,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"🔗 [Clique aqui para ver o anúncio completo]({link})"
             )
             
-            # Se houver foto válida, envia com send_photo; caso contrário, envia send_message
             if foto and foto.startswith('http'):
                 try:
                     await context.bot.send_photo(
@@ -117,7 +111,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                     continue
                 except Exception:
-                    pass # Se der erro na imagem, cai no envio normal de texto abaixo
+                    pass
             
             await context.bot.send_message(
                 chat_id=query.message.chat_id,
@@ -155,11 +149,14 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("🚗 Escolha uma marca para começar:", reply_markup=reply_markup)
 
 if __name__ == '__main__':
-    # Usa a variável 'token' carregada do arquivo .env com segurança
+    if not token:
+        print("❌ Erro: TELEGRAM_TOKEN não encontrado no arquivo .env!")
+        exit(1)
+
     app = ApplicationBuilder().token(token).build()
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_click))
     
-    print("🤖 Bot interativo atualizado rodando...")
+    print("🤖 Bot interativo atualizado e seguro rodando...")
     app.run_polling()
