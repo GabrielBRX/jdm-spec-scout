@@ -2,6 +2,16 @@ import sqlite3
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+token = os.getenv("TELEGRAM_TOKEN")
+
+app = ApplicationBuilder().token(token).build()
+
+
+
 MARCAS = ["Mazda", "Toyota", "Nissan", "Subaru", "Mitsubishi"]
 
 MODELOS_POR_MARCA = {
@@ -145,7 +155,8 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("🚗 Escolha uma marca para começar:", reply_markup=reply_markup)
 
 if __name__ == '__main__':
-    app = ApplicationBuilder().token("8941953034:AAHQGWXYTQtpDSysVE_JNL6zq-D1JJIjT78").build()
+    # Usa a variável 'token' carregada do arquivo .env com segurança
+    app = ApplicationBuilder().token(token).build()
     
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_click))
