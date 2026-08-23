@@ -52,17 +52,20 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         modelo_escolhido = partes[2]
         pagina = int(partes[3]) if len(partes) > 3 else 0
         
+        # Limpa o modelo para garantir que busca sem conflito de hífen
+        modelo_limpo = modelo_escolhido.replace("-", "").replace(" ", "")
+        
         conn = sqlite3.connect('cars.db')
         cursor = conn.cursor()
         
+        # Busca focada no modelo e variações (com e sem hífen), ignorando a obrigatoriedade da marca escrita na string
         cursor.execute("""
             SELECT carro, ano_mes, preco, quilometragem, cambio, link, foto 
             FROM car_listings 
-            WHERE carro LIKE ? AND carro LIKE ?
-        """, (f'%{marca_escolhida}%', f'%{modelo_escolhido}%'))
+            WHERE carro LIKE ? OR REPLACE(REPLACE(carro, '-', ''), ' ', '') LIKE ?
+        """, (f'%{modelo_escolhido}%', f'%{modelo_limpo}%'))
         anuncios = cursor.fetchall()
         conn.close()
-
         # Se NÃO tiver carros
         if not anuncios:
             outros_modelos = [m for m in MODELOS_POR_MARCA.get(marca_escolhida, []) if m.lower() != modelo_escolhido.lower()]
