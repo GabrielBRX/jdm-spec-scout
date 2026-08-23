@@ -116,7 +116,6 @@ def raspar_sbt_japan():
                 for card in cards:
                     texto = card.get_text(separator=" ", strip=True)
                     
-                    # Verifica se qualquer uma das variações (ex: "rx7" ou "rx-7") está no texto
                     tem_modelo = any(v in texto.lower() for v in variacoes)
                     
                     if tem_modelo and len(texto) > 25:
@@ -134,17 +133,35 @@ def raspar_sbt_japan():
                             if foto_url and not foto_url.startswith('http'):
                                 foto_url = f"https://www.sbtjapan.com{foto_url}"
 
+                        # Extração limpa do preço usando Regex para capturar o padrão USD X,XXX
+                        import re
+                        preco_texto = "Sob Consulta"
+                        match_preco = re.search(r'(USD\s?[\d,]+)', texto)
+                        if match_preco:
+                            preco_texto = match_preco.group(1)
+
+                        # Extração limpa do Ano/Mês (procura padrão YYYY/MM)
+                        ano_texto = "N/A"
+                        match_ano = re.search(r'(20\d{2}/\d{1,2}|19\d{2}/\d{1,2})', texto)
+                        if match_ano:
+                            ano_texto = match_ano.group(1)
+
+                        # Extração limpa da Quilometragem (procura número seguido de KM)
+                        km_texto = "N/A"
+                        match_km = re.search(r'([\d,]+\s?KM)', texto, re.IGNORECASE)
+                        if match_km:
+                            km_texto = match_km.group(1)
+
                         carro_dict = {
                             'stock_id': f"SBT-{termo}-{int(time.time())}-{len(lista_geral)}",
                             'carro': f"JDM {termo} (SBT)",
-                            'ano_mes': '2000/1',
-                            'preco': 'Sob Consulta',
-                            'quilometragem': 'N/A',
+                            'ano_mes': ano_texto,
+                            'preco': preco_texto,
+                            'quilometragem': km_texto,
                             'cambio': 'Manual',
                             'link': link,
                             'foto': foto_url
                         }
-                        
                         if not any(c['link'] == link for c in lista_geral) and link != '#':
                             lista_geral.append(carro_dict)
                             encontrados += 1
